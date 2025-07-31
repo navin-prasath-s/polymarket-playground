@@ -11,6 +11,11 @@ from src.models.market import Market
 from src.models.market_change_log import MarketChangeLog
 from src.models.market_outcome import MarketOutcome
 from src.models.sync_hot_market import SyncHotMarket
+from src.models.order import Order
+from src.models.order_fill import OrderFill
+from src.models.payout_log import PayoutLog
+from src.models.user import User
+from src.models.user_position import UserPosition
 
 
 load_dotenv()
