@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 from enum import Enum
 
+from pydantic import ConfigDict
 from sqlmodel import SQLModel, Field
 
 class MarketChangeType(str, Enum):
@@ -9,8 +10,7 @@ class MarketChangeType(str, Enum):
 
 
 class MarketChangeLogBase(SQLModel):
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class MarketChangeLog(MarketChangeLogBase, table=True):
     __tablename__ = "market_change_logs"

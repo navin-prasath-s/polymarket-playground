@@ -2,13 +2,13 @@ from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Annotated
 
+from pydantic import ConfigDict
 from sqlalchemy import ForeignKeyConstraint
 from sqlmodel import SQLModel, Field
 
 
 class PayoutLogBase(SQLModel):
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class PayoutLog(PayoutLogBase, table=True):

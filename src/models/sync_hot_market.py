@@ -1,9 +1,9 @@
+from pydantic import ConfigDict
 from sqlmodel import SQLModel, Field
 
 
 class SyncHotMarketBase(SQLModel):
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class SyncHotMarket(SyncHotMarketBase, table=True):

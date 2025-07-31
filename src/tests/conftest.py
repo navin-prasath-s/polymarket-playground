@@ -1,10 +1,9 @@
-# tests/conftest.py
 import pytest
 from sqlmodel import SQLModel, create_engine, Session
 from contextlib import contextmanager
 
 
-import src.session as sessions
+import src.sessions as sessions
 import src.models.market
 import src.models.sync_hot_market
 import src.models.market_outcome
@@ -16,7 +15,7 @@ import src.models.order_fill
 import src.models.payout_log
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="function")
 def engine():
     """
     Create a single in-memory SQLite engine for tests,
@@ -30,7 +29,7 @@ def engine():
 
     return test_engine
 
-@pytest.fixture
+@pytest.fixture(scope="function")
 def session(engine):
     """
     Yields a fresh Session per test and rolls back afterwards.

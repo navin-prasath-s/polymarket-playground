@@ -3,6 +3,7 @@ from decimal import Decimal
 from enum import Enum
 from typing import Annotated, TYPE_CHECKING
 
+from pydantic import ConfigDict
 from sqlalchemy import ForeignKeyConstraint, CheckConstraint
 from sqlmodel import SQLModel, Field, Relationship
 
@@ -26,9 +27,7 @@ class OrderStatus(str, Enum):
 
 
 class OrderBase(SQLModel):
-    class Config:
-        from_attributes = True
-
+    model_config = ConfigDict(from_attributes=True)
 
 class Order(OrderBase, table=True):
     __tablename__ = "orders"
@@ -49,36 +48,22 @@ class Order(OrderBase, table=True):
     )
 
     order_id: int | None = Field(primary_key=True)
-
-    user_name: int = Field(
-        foreign_key="users.name",
-        nullable=False)
-
+    user_name: int = Field(foreign_key="users.name",nullable=False)
     market: str = Field(nullable=False)
-
     token: str = Field(nullable=False)
-
     side: OrderSide = Field(nullable=False)
-
     order_type: OrderType = Field(nullable=False)
-
     status: OrderStatus = Field(nullable=False)
-
     amount_usdc: Annotated[Decimal, Field(ge=0,
                                      max_digits=14,
                                      decimal_places=2,
                                      nullable=False)] = Decimal('0')
-
     shares: Annotated[Decimal, Field(ge=0,
                                      max_digits=14,
                                      decimal_places=2,
                                      nullable=False)] = Decimal('0')
-
-
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-
     fills: list["OrderFill"] | None = Relationship(back_populates="order_obj")
 
 

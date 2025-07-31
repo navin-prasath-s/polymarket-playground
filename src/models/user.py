@@ -1,13 +1,13 @@
 from typing import Annotated
 from decimal import Decimal
 
+from pydantic import ConfigDict
 from sqlmodel import SQLModel, Field
 from sqlalchemy import CheckConstraint
 
 
 class UserBase(SQLModel):
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class User(UserBase, table=True):
