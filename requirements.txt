@@ -4,3 +4,4 @@ SQLAlchemy==2.0.42
 sqlmodel==0.0.24
 py_clob_client==0.24.0
 python-dotenv==1.1.1
+pytest==8.4.1
