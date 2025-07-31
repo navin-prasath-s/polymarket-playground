@@ -9,7 +9,7 @@ from src.models.market_outcome import MarketOutcome
 from src.models.sync_hot_market import SyncHotMarket
 from src.models.market import Market
 from src.services.clob_service import ClobService
-from src.services.market_sync_service import MarketSyncService, MarketSyncError
+from src.services.market_sync_service import MarketSyncService
 
 
 def test_get_hot_sync_markets_returns_all(session: Session):

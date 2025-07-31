@@ -3,6 +3,7 @@ from py_clob_client.client import ClobClient
 class ClobService:
     host = "https://clob.polymarket.com"
 
+    # TODO: pre filter the markets
     @staticmethod
     def get_clob_markets_accepting_orders() -> list[dict]:
         """Fetch all CLOB markets and return those who accepts orders."""

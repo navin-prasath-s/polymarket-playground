@@ -21,7 +21,7 @@ class PayoutLog(PayoutLogBase, table=True):
         ),
     )
 
-    user_id: int = Field(foreign_key="users.name", primary_key=True)
+    user_name: int = Field(foreign_key="users.name", primary_key=True)
     market: str = Field(primary_key=True)
     token: str = Field(primary_key=True)
     shares_paid: Annotated[Decimal, Field(ge=0,
