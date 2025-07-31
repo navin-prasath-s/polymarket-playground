@@ -1,3 +1,6 @@
 fastapi==0.116.1
 alembic==1.16.4
 SQLAlchemy==2.0.42
+sqlmodel==0.0.24
+py_clob_client==0.24.0
+python-dotenv==1.1.1

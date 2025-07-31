@@ -1,0 +1,12 @@
+const meta = document.querySelector('meta[property="fc:frame:post_url"]');
+if (meta) {
+  const url = meta.content;
+  const match = url.match(/market\/(0x[a-fA-F0-9]{64})/);
+  if (match) {
+    console.log("conditionId:", match[1]);
+  } else {
+    console.log("conditionId not found in meta tag!");
+  }
+} else {
+  console.log("Meta tag not found!");
+}
