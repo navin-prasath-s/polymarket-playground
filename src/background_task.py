@@ -11,6 +11,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# TODO: use BackgroundTasks from fast api to run this in the background
 
 def run_market_sync():
     """

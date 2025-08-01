@@ -23,7 +23,14 @@ class User(UserBase, table=True):
                                       decimal_places=2,
                                       nullable=False)] = Decimal("10000.00")
 
+class UserCreate(UserBase):
+    name: str
+    balance: Annotated[Decimal, Field(ge=0,
+                                      max_digits=14,
+                                      decimal_places=2,
+                                      nullable=False)] = Decimal("10000.00")
 
-
-
+class UserRead(UserBase):
+    name: str
+    balance: Decimal
 
