@@ -32,11 +32,11 @@ def run_market_sync():
                 session.commit()
                 logger.info(f"Payouts resolved: {payouts}", )
 
-            combined_payload = {**result, "payouts": payouts}
-            note_path = "/mnt/data/market_sync_note.txt"
-            with open(note_path, "w") as f:
-                json.dump(combined_payload, f, indent=2)
-            logger.info(f"Wrote combined payload to {note_path}")
+            # combined_payload = {**result, "payouts": payouts}
+            # note_path = "/mnt/data/market_sync_note.txt"
+            # with open(note_path, "w") as f:
+            #     json.dump(combined_payload, f, indent=2)
+            # logger.info(f"Wrote combined payload to {note_path}")
 
         except MarketSyncError as e:
             session.rollback()
