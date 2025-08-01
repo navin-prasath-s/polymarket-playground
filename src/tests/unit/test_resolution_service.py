@@ -295,3 +295,108 @@ def test_resolve_market_winners_error(monkeypatch, session):
     assert "boom" in str(err.original)
 
 
+# src/tests/unit/test_resolution_happy_path.py
+
+import pytest
+from decimal import Decimal
+from contextlib import contextmanager
+
+from src.services.resolution_service import ResolutionService
+from src.models.payout_log import PayoutLog
+from src.models.user_position import UserPosition
+from src.models.user import User
+
+
+class DummySession:
+    """
+    A minimal in‐memory “session” that just records adds/deletes
+    so we can inspect what happened, without needing an actual DB.
+    """
+    def __init__(self):
+        self.added = []
+        self.deleted = []
+
+    def add(self, obj):
+        self.added.append(obj)
+
+    def delete(self, obj):
+        self.deleted.append(obj)
+
+    # no‐ops
+    def commit(self): pass
+    def rollback(self): pass
+
+
+def test_resolve_single_market_balances_and_summary(monkeypatch):
+    """
+    Scenario:
+      - Market "MKT" closes with "YES" as the only winner.
+      - alice holds 10 YES.
+      - bob holds 5 YES and 20 NO.
+    Expectations:
+      - alice balance increases by 10.
+      - bob balance increases by 5.
+      - both positions are deleted.
+      - two PayoutLog entries are staged.
+      - the returned summary reflects 2 payouts totaling 15.
+    """
+    # ——— Arrange ——————————————————————————————————————————————————————
+    session = DummySession()
+
+    # Our two users start with these balances:
+    alice = User(name="alice", balance=Decimal("100"))
+    bob   = User(name="bob",   balance=Decimal("200"))
+
+    # Three positions in MKT:
+    pos_alice = UserPosition(user_name="alice", market="MKT", token="YES", shares=Decimal("10"))
+    pos_bob1  = UserPosition(user_name="bob",   market="MKT", token="YES", shares=Decimal("5"))
+    pos_bob2  = UserPosition(user_name="bob",   market="MKT", token="NO",  shares=Decimal("20"))
+
+    # Stub out fetches:
+    monkeypatch.setattr(
+        ResolutionService,
+        "_fetch_positions",
+        lambda db, cond: [pos_alice, pos_bob1, pos_bob2]
+    )
+    monkeypatch.setattr(
+        ResolutionService,
+        "_fetch_user_profiles",
+        lambda db, ids: {"alice": alice, "bob": bob}
+    )
+
+    # Only "YES" wins:
+    winning_markets = [{"condition_id": "MKT", "winning_token_ids": ["YES"]}]
+
+    # Act
+    result = ResolutionService.resolve_market_winners(session, winning_markets)
+
+    # 1) Balances
+    assert alice.balance == Decimal("110")
+    assert bob.balance == Decimal("205")
+
+    # 2) Summary
+    assert result == [{
+        "market": "MKT",
+        "num_payouts": 2,
+        "payouts": [
+            {"user_name": "alice", "shares_paid": "10"},
+            {"user_name": "bob", "shares_paid": "5"},
+        ],
+        "total_paid": "15",
+        "errors": [],
+    }]
+
+    # 3) PayoutLog entries
+    logs = [obj for obj in session.added if isinstance(obj, PayoutLog)]
+    assert len(logs) == 3
+    winners = [l for l in logs if l.is_winner]
+    assert {(l.user_name, l.shares_paid) for l in winners} == {
+        ("alice", Decimal("10")),
+        ("bob", Decimal("5")),
+    }
+
+    # 4) Deletions
+    assert len(session.deleted) == 3
+    assert pos_alice in session.deleted
+    assert pos_bob1 in session.deleted
+    assert pos_bob2 in session.deleted

@@ -20,7 +20,7 @@ class UserPosition(UserPositionBase, table=True):
         CheckConstraint('shares >= 0', name='_user_shares_non_negative')
     )
 
-    user_name: int = Field(foreign_key="users.name", primary_key=True)
+    user_name: str = Field(foreign_key="users.name", primary_key=True)
     market: str = Field(primary_key=True)
     token: str = Field(primary_key=True)
     shares: Annotated[Decimal, Field(ge=0,

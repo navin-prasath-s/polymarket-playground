@@ -54,7 +54,7 @@ class ResolutionService:
         # Fetch required data
         positions = ResolutionService._fetch_positions(db, condition_id)
         user_profiles = ResolutionService._fetch_user_profiles(
-            db, {pos.user_id for pos in positions}
+            db, {pos.user_name for pos in positions}
         )
 
         # Initialize accumulators
