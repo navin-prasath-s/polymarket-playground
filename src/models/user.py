@@ -34,3 +34,9 @@ class UserRead(UserBase):
     name: str
     balance: Decimal
 
+class UserUpdate(UserBase):
+    name: str | None = None
+    balance: Annotated[Decimal | None, Field(ge=0,
+                                             max_digits=14,
+                                             decimal_places=2,
+                                             nullable=True)] = Decimal("10000.00")
