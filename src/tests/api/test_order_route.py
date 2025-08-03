@@ -233,10 +233,49 @@ def test_list_orders_for_user_happy_path(client, db_session):
     db_session.add_all([order1, order2])
     db_session.commit()
 
-    response = client.get("/orders", params={"user_name": "alicee"})
+    response = client.get("/orders/alicee")
     assert response.status_code == 200
     data = response.json()
     assert isinstance(data, list)
     assert len(data) == 1
     assert data[0]["user_name"] == "alicee"
     assert data[0]["market"] == "m1"
+
+
+def test_get_all_orders_happy_path(client, db_session):
+    db_session.query(Order).delete()
+    db_session.query(User).delete()
+    db_session.commit()
+    db_session.add(User(name="alicee22", balance=Decimal("0.00")))
+    db_session.add(User(name="bobb22", balance=Decimal("0.00")))
+    order1 = Order(
+        user_name="alicee22",
+        market="m1",
+        token="t1",
+        side=OrderSide.BUY,
+        order_type=OrderType.MARKET,
+        status=OrderStatus.FILLED,
+        amount_usdc=Decimal("100.00"),
+        shares=Decimal("10")
+    )
+    order2 = Order(
+        user_name="bobb22",
+        market="m2",
+        token="t2",
+        side=OrderSide.SELL,
+        order_type=OrderType.MARKET,
+        status=OrderStatus.FILLED,
+        amount_usdc=Decimal("50.00"),
+        shares=Decimal("5")
+    )
+    db_session.add_all([order1, order2])
+    db_session.commit()
+
+    response = client.get("/orders")
+    assert response.status_code == 200
+    data = response.json()
+    assert isinstance(data, list)
+    assert len(data) == 2
+    user_names = {d["user_name"] for d in data}
+    assert "alicee22" in user_names
+    assert "bobb22" in user_names

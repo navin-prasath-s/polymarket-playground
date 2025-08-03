@@ -1,8 +1,8 @@
 import logging
 from decimal import Decimal
-from sqlalchemy.exc import IntegrityError
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import selectinload
 from sqlmodel import Session, select
 
@@ -12,7 +12,6 @@ from src.models.user_position import UserPosition
 from src.services.clob_service import ClobService
 from src.services.order_service import OrderService
 from src.sessions import get_session
-
 from src.models.market_outcome import MarketOutcome
 from src.models.order import OrderBuyCreate, Order, OrderSide, OrderType, OrderStatus, OrderSellCreate, OrderRead
 
@@ -309,20 +308,30 @@ async def get_all_orders(
 
 
 @router.get(
-    "/",
+    "/{user_name}",
     response_model=list[OrderRead],
     status_code=status.HTTP_200_OK,
     description="Get all orders placed by a particular user."
 )
 async def get_user_orders(
-    user_name: str = Query(None, description="Filter by user name"),
+    user_name: str,
     db: Session = Depends(get_session),
 ):
-    query = select(Order)
-    if user_name:
-        # Optional: Check if user exists (skip if you don't care about 404)
-        if not db.exec(select(User).where(User.name == user_name)).one_or_none():
-            raise HTTPException(404, "user not found")
-        query = query.where(Order.user_name == user_name)
-    orders = db.exec(query).all()
+    # Optionally check if user exists
+    if not db.exec(select(User).where(User.name == user_name)).one_or_none():
+        raise HTTPException(404, "user not found")
+    orders = db.exec(select(Order).where(Order.user_name == user_name)).all()
+    return orders
+
+
+@router.get(
+    "/",
+    response_model=list[OrderRead],
+    status_code=status.HTTP_200_OK,
+    description="Get all orders in the system."
+)
+async def get_all_orders(
+    db: Session = Depends(get_session),
+):
+    orders = db.exec(select(Order)).all()
     return orders

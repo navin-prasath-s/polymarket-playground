@@ -76,33 +76,3 @@ def test_reset_user_no_key(client, db_session):
     response = client.patch("/users/dave/reset-balance", json=payload)
     assert response.status_code == 403
 
-def test_get_user_positions_empty(client, db_session):
-    # Create the user but don’t give them any positions
-    client.post("/users/", json={"name": "eve"})
-    response = client.get("/users/eve/positions")
-    assert response.status_code == 200
-    assert response.json() == []
-
-def test_get_user_positions_user_not_found(client, db_session):
-    # No user “ghost” exists
-    response = client.get("/users/ghost/positions")
-    assert response.status_code == 404
-
-
-def test_get_user_positions_with_data(client, db_session):
-    # 1) create user
-    client.post("/users/", json={"name": "frank"})
-    # 2) seed two positions
-    db_session.add_all([
-        UserPosition(user_name="frank", market="mkt1", token="t1", shares=Decimal("10")),
-        UserPosition(user_name="frank", market="mkt2", token="t2", shares=Decimal("0.50")),
-    ])
-    db_session.commit()
-    # 3) call endpoint
-    response = client.get("/users/frank/positions")
-    assert response.status_code == 200
-    data = response.json()
-    # ensure both entries come back (as strings, since JSON-encoded)
-    assert {"market": "mkt1", "token": "t1", "shares": "10.00"} in data
-    assert {"market": "mkt2", "token": "t2", "shares": "0.50"} in data
-    assert len(data) == 2

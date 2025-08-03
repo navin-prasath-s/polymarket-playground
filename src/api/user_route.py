@@ -8,7 +8,6 @@ from sqlmodel import Session, select
 from src.sessions import get_session
 from src.security import require_l1, require_l2
 from src.models.user import User, UserCreate, UserRead, BalanceUpdate
-from src.models.user_position import UserPositionRead, UserPosition
 
 
 logger = logging.getLogger(__name__)
@@ -106,34 +105,6 @@ async def reset_user_balance(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="An unexpected error occurred."
         )
-
-
-@router.get(
-    "/{user_name}/positions",
-    response_model=list[UserPositionRead],
-    status_code=status.HTTP_200_OK,
-    description="Get all market positions for a given user.",
-    responses={
-        404: {"description": "User not found"},
-    },
-)
-async def get_user_positions(
-    user_name: str,
-    db: Session = Depends(get_session),
-):
-    user = db.exec(select(User).where(User.name == user_name)).one_or_none()
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"User '{user_name}' not found"
-        )
-
-    # Fetch all positions
-    positions = db.exec(
-        select(UserPosition).where(UserPosition.user_name == user_name)
-    ).all()
-
-    return positions
 
 
 
