@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from src.api import user_route, order_route, position_route
+from src.api import user_route, order_route, position_route, admin_route
 
 
 
@@ -19,9 +19,10 @@ async def root():
     return {"message": "Server is up and running"}
 
 app.include_router(user_route.router)
-app.include_router(order_route.router)\
-
+app.include_router(order_route.router)
 app.include_router(position_route.router)
+
+app.include_router(admin_route.router)
 
 # uvicorn src.api.app:app --reload --port 8000
 

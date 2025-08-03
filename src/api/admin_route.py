@@ -1,7 +1,13 @@
 from fastapi import APIRouter, Depends, status, HTTPException
 from sqlmodel import Session, delete
 
+from src.models.market import Market
+from src.models.market_change_log import MarketChangeLog
+from src.models.market_outcome import MarketOutcome
 from src.models.order import Order
+from src.models.order_fill import OrderFill
+from src.models.payout_log import PayoutLog
+from src.models.sync_hot_market import SyncHotMarket
 from src.models.user import User
 from src.models.user_position import UserPosition
 from src.sessions import get_session
@@ -18,8 +24,14 @@ router = APIRouter(prefix="/admin", tags=["admin"])
 )
 async def clear_all_data(db: Session = Depends(get_session)):
     try:
-        db.exec(delete(Order))
+        db.exec(delete(MarketOutcome))
+        db.exec(delete(MarketChangeLog))
+        db.exec(delete(PayoutLog))
+        db.exec(delete(SyncHotMarket))
         db.exec(delete(UserPosition))
+        db.exec(delete(OrderFill))
+        db.exec(delete(Order))
+        db.exec(delete(Market))
         db.exec(delete(User))
         db.commit()
         return {"success": True, "message": "All data cleared."}
