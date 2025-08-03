@@ -1,14 +1,15 @@
 import logging
 import os
+from decimal import Decimal
+
+from dotenv import load_dotenv
 import pytest
 from fastapi.testclient import TestClient
-from decimal import Decimal
-from dotenv import load_dotenv
 from sqlmodel import SQLModel, create_engine, Session, select
 
 from src.app import app
+from src.models.user_position import UserPosition
 from src.sessions import get_session
-from src.models.user import User
 
 
 logging.basicConfig(level=logging.DEBUG)
@@ -20,11 +21,11 @@ L2_KEY = os.getenv("L2_KEY")
 
 
 def test_create_user_happy_path(client, db_session):
-    payload = {"name": "alice", "balance": "100.00"}
+    payload = {"name": "alicee2", "balance": "100.00"}
     response = client.post("/users/", json=payload)
     assert response.status_code == 201
     data = response.json()
-    assert data["name"] == "alice"
+    assert data["name"] == "alicee2"
     assert Decimal(data["balance"]) == Decimal("100.00")
 
 
@@ -42,35 +43,66 @@ def test_create_user_missing_payload(client):
     assert response.status_code == 422  # Unprocessable Entity for missing required 'name'
 
 
-@pytest.mark.parametrize("balance_input, expected_balance", [
-    ({"name": "bob", "balance": "500.00"}, Decimal("500.00")),
-    ({"name": "bob2"}, Decimal("10000.00")),
+@pytest.mark.parametrize("user_name, balance_body, expected_balance", [
+    ("bob", {"balance": "500.00"}, Decimal("500.00")),
+    ("bob2", {}, Decimal("10000.00")),
 ])
-def test_reset_user_with_and_without_balance(client, db_session, balance_input, expected_balance):
-    # First, create the user to reset
-    client.post("/users/", json={"name": balance_input["name"]})
-    # Perform reset
+def test_reset_user_with_and_without_balance(client, db_session, user_name, balance_body, expected_balance):
+    # First, create the user
+    client.post("/users/", json={"name": user_name})
+    # PATCH request to new endpoint
     response = client.patch(
-        "/users/reset-user",
-        json=balance_input,
+        f"/users/{user_name}/reset-balance",
+        json=balance_body,
         headers={"X-API-Key": L1_KEY},
     )
     assert response.status_code == 200, response.text
     data = response.json()
-    assert data["name"] == balance_input["name"]
+    assert data["name"] == user_name
     assert Decimal(data["balance"]) == expected_balance
 
 def test_reset_user_wrong_key(client, db_session):
     # Create user
     client.post("/users/", json={"name": "charlie"})
     headers = {"X-API-Key": "wrong-key"}
-    payload = {"name": "charlie", "balance": "100.00"}
-    response = client.patch("/users/reset-user", json=payload, headers=headers)
+    payload = {"balance": "100.00"}
+    response = client.patch("/users/charlie/reset-balance", json=payload, headers=headers)
     assert response.status_code == 403
 
 def test_reset_user_no_key(client, db_session):
     # Create user
     client.post("/users/", json={"name": "dave"})
-    payload = {"name": "dave", "balance": "100.00"}
-    response = client.patch("/users/reset-user", json=payload)
+    payload = {"balance": "100.00"}
+    response = client.patch("/users/dave/reset-balance", json=payload)
     assert response.status_code == 403
+
+def test_get_user_positions_empty(client, db_session):
+    # Create the user but don’t give them any positions
+    client.post("/users/", json={"name": "eve"})
+    response = client.get("/users/eve/positions")
+    assert response.status_code == 200
+    assert response.json() == []
+
+def test_get_user_positions_user_not_found(client, db_session):
+    # No user “ghost” exists
+    response = client.get("/users/ghost/positions")
+    assert response.status_code == 404
+
+
+def test_get_user_positions_with_data(client, db_session):
+    # 1) create user
+    client.post("/users/", json={"name": "frank"})
+    # 2) seed two positions
+    db_session.add_all([
+        UserPosition(user_name="frank", market="mkt1", token="t1", shares=Decimal("10")),
+        UserPosition(user_name="frank", market="mkt2", token="t2", shares=Decimal("0.50")),
+    ])
+    db_session.commit()
+    # 3) call endpoint
+    response = client.get("/users/frank/positions")
+    assert response.status_code == 200
+    data = response.json()
+    # ensure both entries come back (as strings, since JSON-encoded)
+    assert {"market": "mkt1", "token": "t1", "shares": "10.00"} in data
+    assert {"market": "mkt2", "token": "t2", "shares": "0.50"} in data
+    assert len(data) == 2

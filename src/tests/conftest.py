@@ -109,11 +109,15 @@ def db_session():
     def restart_savepoint(sess, trans):
         if trans.nested and not trans._parent.nested:
             sess.begin_nested()
-
-    yield session
-    session.close()
-    transaction.rollback()
+    try:
+        yield session
+    finally:
+        session.rollback()
+        session.close()
+    if transaction.is_active:
+        transaction.rollback()
     connection.close()
+
 
 # Override FastAPI dependency for TestClient
 @pytest.fixture()

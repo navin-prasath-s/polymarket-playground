@@ -34,8 +34,8 @@ class UserRead(UserBase):
     name: str
     balance: Decimal
 
-class UserUpdate(UserBase):
-    name: str | None = None
+
+class BalanceUpdate(UserBase):
     balance: Annotated[Decimal | None, Field(ge=0,
                                              max_digits=14,
                                              decimal_places=2,

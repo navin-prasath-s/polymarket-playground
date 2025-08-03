@@ -1,8 +1,8 @@
 """init
 
-Revision ID: 2376bd3c3926
+Revision ID: 7492b40ef4bc
 Revises: 
-Create Date: 2025-08-01 03:06:51.573026
+Create Date: 2025-08-02 00:48:12.181443
 
 """
 from typing import Sequence, Union
@@ -13,7 +13,7 @@ import sqlmodel
 
 
 # revision identifiers, used by Alembic.
-revision: str = '2376bd3c3926'
+revision: str = '7492b40ef4bc'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -50,14 +50,14 @@ def upgrade() -> None:
     op.create_table('market_outcomes',
     sa.Column('market', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
     sa.Column('token', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
-    sa.Column('outcome_text', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
+    sa.Column('outcome_text', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
     sa.Column('is_winner', sa.Boolean(), nullable=False),
     sa.ForeignKeyConstraint(['market'], ['markets.condition_id'], ),
     sa.PrimaryKeyConstraint('market', 'token')
     )
     op.create_table('orders',
     sa.Column('order_id', sa.Integer(), nullable=False),
-    sa.Column('user_name', sa.Integer(), nullable=False),
+    sa.Column('user_name', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
     sa.Column('market', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
     sa.Column('token', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
     sa.Column('side', sa.Enum('BUY', 'SELL', name='orderside'), nullable=False),

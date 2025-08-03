@@ -48,7 +48,7 @@ class Order(OrderBase, table=True):
     )
 
     order_id: int | None = Field(primary_key=True)
-    user_name: int = Field(foreign_key="users.name",nullable=False)
+    user_name: str = Field(foreign_key="users.name",nullable=False)
     market: str = Field(nullable=False)
     token: str = Field(nullable=False)
     side: OrderSide = Field(nullable=False)
@@ -68,6 +68,7 @@ class Order(OrderBase, table=True):
 
 
 class OrderBuyCreate(OrderBase):
+    user_name: str
     market: str
     token: str
     order_type: OrderType
@@ -77,6 +78,7 @@ class OrderBuyCreate(OrderBase):
                                      nullable=False)] = Decimal('0')
 
 class OrderSellCreate(OrderBase):
+    user_name: str
     market: str
     token: str
     order_type: OrderType
@@ -84,3 +86,15 @@ class OrderSellCreate(OrderBase):
                                 max_digits=14,
                                 decimal_places=2,
                                 nullable=False)] = Decimal('0')
+
+class OrderRead(OrderBase):
+    user_name: str
+    market: str
+    token: str
+    side: OrderSide
+    order_type: OrderType
+    status: OrderStatus
+    amount_usdc: Decimal = Field(ge=0, max_digits=14, decimal_places=2)
+    shares: Decimal = Field(ge=0, max_digits=14, decimal_places=2)
+    created_at: datetime
+    updated_at: datetime

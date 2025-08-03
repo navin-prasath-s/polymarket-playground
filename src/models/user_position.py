@@ -29,3 +29,10 @@ class UserPosition(UserPositionBase, table=True):
                                      nullable=False)] = Decimal('0')
 
 
+class UserPositionRead(UserPositionBase):
+    market: str
+    token: str
+    shares: Annotated[Decimal, Field(ge=0,
+                                     max_digits=14,
+                                     decimal_places=2,
+                                     nullable=False)] = Decimal('0')

@@ -101,7 +101,7 @@ class ResolutionService:
             return {}
         stmt = select(User).where(User.name.in_(names))
         result = db.exec(stmt)
-        return {u.name: u for u in result.scalars().all()}
+        return {u.user_name: u for u in result.scalars().all()}
 
     @staticmethod
     def _process_position(

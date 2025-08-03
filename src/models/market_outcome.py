@@ -16,6 +16,6 @@ class MarketOutcome(MarketOutcomeBase, table=True):
 
     market: str = Field(foreign_key="markets.condition_id",primary_key=True)
     token: str = Field(primary_key=True)
-    outcome_text: str = Field(default=None)
+    outcome_text: str = Field(default=None, nullable=True)
     is_winner: bool = Field(default=False)
     market_obj: Optional["Market"] = Relationship(back_populates="outcomes")
