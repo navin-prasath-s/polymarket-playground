@@ -32,20 +32,24 @@ def run_market_sync():
             session.commit()
             logger.info(f"Market sync succeeded: {result}", )
 
-            # 1.1) Emit to webhook
+            # 1.1) Emit added markets to webhook
             added_markets = result.get("added_dict_model", [])
-            if added_markets:
-                emit_market_event(
-                    MarketEventType.MARKET_ADDED.value,
-                    {"markets": added_markets}
-                )
+            emit_market_event(
+                MarketEventType.MARKET_ADDED.value,
+                {"markets": added_markets}
+            )
 
             # 2) resolve payouts for any removed/untradable markets
-            winners = result.get("winners", [])
-            if winners:
-                payouts = ResolutionService.resolve_market_winners(session, winners)
+            markets_with_winning_tokens = result.get("markets_with_winning_tokens", [])
+            if markets_with_winning_tokens:
+                payouts = ResolutionService.resolve_market_winners(session, markets_with_winning_tokens)
                 session.commit()
                 logger.info(f"Payouts resolved: {payouts}", )
+
+            emit_market_event(
+                MarketEventType.MARKET_RESOLVED.value,
+                {"markets": markets_with_winning_tokens}
+            )
 
             # combined_payload = {**result, "payouts": payouts}
             # note_path = "/mnt/data/market_sync_note.txt"

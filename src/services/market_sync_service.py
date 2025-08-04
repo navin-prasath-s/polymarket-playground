@@ -266,7 +266,7 @@ class MarketSyncService:
             db, [m for m in clob_markets if m["condition_id"] in added_stable]
         )
         marked_untradable = MarketSyncService.mark_stable_markets_untradable(db, removed_tracked)
-        winners = MarketSyncService.mark_market_outcome_winner(db, marked_untradable)
+        markets_with_winning_tokens = MarketSyncService.mark_market_outcome_winner(db, marked_untradable)
 
         return {
             "added_tracked": added_tracked,
@@ -275,6 +275,6 @@ class MarketSyncService:
             "added_stable": added_stable,
             "outcomes_inserted": outcomes_inserted,
             "marked_untradable": marked_untradable,
-            "winners": winners,
+            "markets_with_winning_tokens": markets_with_winning_tokens,
         }
 
