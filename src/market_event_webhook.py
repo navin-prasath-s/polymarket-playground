@@ -1,6 +1,6 @@
 import logging
 import os
-
+from enum import Enum
 
 import httpx
 from dotenv import load_dotenv
@@ -12,6 +12,10 @@ subscriber_url = os.getenv("SUBSCRIBER_URL", "http://localhost:8001/market-event
 
 logger = logging.getLogger(__name__)
 
+class MarketEventType(Enum):
+    MARKET_ADDED = "market_added"
+    MARKET_RESOLVED = "market_resolved"
+    PAYOUT_LOGS = "payout_logs"
 
 
 def emit_market_event(event_type: str, data: dict):
@@ -22,3 +26,5 @@ def emit_market_event(event_type: str, data: dict):
         logger.info(f"Emitted {event_type} to {subscriber_url}")
     except Exception as e:
         logger.warning(f"Failed to emit {event_type} to {subscriber_url}: {e}")
+
+

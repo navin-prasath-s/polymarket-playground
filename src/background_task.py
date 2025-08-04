@@ -1,9 +1,7 @@
 import logging
-from enum import Enum
-
 
 from src.sessions import get_session_context
-from src.market_event_webhook import emit_market_event
+from src.market_event_webhook import emit_market_event, MarketEventType
 from src.services.market_sync_service import MarketSyncService, MarketSyncError
 from src.services.resolution_service import ResolutionService, ResolutionError
 
@@ -13,11 +11,6 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-
-class MarketEventType(Enum):
-    MARKET_ADDED = "market_added"
-    MARKET_RESOLVED = "market_resolved"
-    PAYOUT_LOGS = "payout_logs"
 
 # TODO: use BackgroundTasks from fast api to run this in the background
 
