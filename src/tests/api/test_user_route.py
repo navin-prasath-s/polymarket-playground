@@ -1,5 +1,6 @@
 import logging
 import os
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
 from dotenv import load_dotenv
@@ -9,6 +10,7 @@ from sqlmodel import SQLModel, create_engine, Session, select
 
 from src.app import app
 from src.models.user_position import UserPosition
+from src.models.reset_log import ResetLog
 from src.sessions import get_session
 
 
@@ -76,3 +78,28 @@ def test_reset_user_no_key(client, db_session):
     response = client.patch("/users/dave/reset-balance", json=payload)
     assert response.status_code == 403
 
+def test_reset_balance_creates_log(client, db_session):
+    user_name = "logtestuser"
+    # Create the user
+    client.post("/users/", json={"name": user_name, "balance": "250.00"})
+
+    # Reset the user’s balance
+    new_balance = Decimal("777.77")
+    response = client.patch(
+        f"/users/{user_name}/reset-balance",
+        json={"balance": str(new_balance)},
+        headers={"X-API-Key": L1_KEY},
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["name"] == user_name
+    assert Decimal(data["balance"]) == new_balance
+
+    # Now check the ResetLog was created in the DB
+    log = db_session.exec(
+        select(ResetLog).where(ResetLog.user_name == user_name)
+    ).first()
+    assert log is not None
+    assert log.user_name == user_name
+    assert log.balance_reset == new_balance
+    assert isinstance(log.timestamp, datetime)

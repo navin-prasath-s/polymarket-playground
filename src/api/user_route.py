@@ -6,8 +6,9 @@ from fastapi import APIRouter, Depends, HTTPException, status, Body
 from sqlmodel import Session, select
 
 from src.sessions import get_session
-from src.security import require_l1, require_l2
+from src.security import require_l1
 from src.models.user import User, UserCreate, UserRead, BalanceUpdate
+from src.models.reset_log import ResetLog
 
 
 logger = logging.getLogger(__name__)
@@ -88,6 +89,15 @@ async def reset_user_balance(
             user_db.balance = user_input.balance
         logger.debug(f"User {user_name} balance set to {user_db.balance}")
         db.add(user_db)
+
+
+        #log Reset
+        reset_log = ResetLog(
+            user_name=user_db.name,
+            balance_reset=user_db.balance,
+        )
+        db.add(reset_log)
+
         logger.debug(f"Committing changes for user {user_name}")
         db.commit()
         logger.debug(f"Refreshing user {user_name} after commit")

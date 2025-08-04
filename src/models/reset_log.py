@@ -3,7 +3,6 @@ from decimal import Decimal
 from typing import Annotated
 
 from pydantic import ConfigDict
-from sqlalchemy import ForeignKeyConstraint
 from sqlmodel import SQLModel, Field
 
 
@@ -14,8 +13,8 @@ class ResetLogBase(SQLModel):
 class ResetLog(ResetLogBase, table=True):
     __tablename__ = "reset_logs"
 
-
-    user_name: str = Field(foreign_key="users.name", primary_key=True)
+    id: int | None = Field( primary_key=True)
+    user_name: str = Field(foreign_key="users.name")
     balance_reset: Annotated[Decimal, Field(ge=0,
                                             max_digits=14,
                                             decimal_places=2,
