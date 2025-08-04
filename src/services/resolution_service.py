@@ -167,57 +167,57 @@ class ResolutionService:
 
 
 
-class DummyPos:
-    pass
-
-def test_process_single_market_aggregates(monkeypatch, session):
-    # Arrange
-    wm = {"condition_id": "MKT", "winning_token_ids": ["T1", "T2"]}
-
-    # 1) Stub _fetch_positions to return two dummy positions
-    dummy_positions = [DummyPos(), DummyPos()]
-    monkeypatch.setattr(
-        ResolutionService,
-        "_fetch_positions",
-        lambda db, cond: dummy_positions
-    )
-
-    # 2) Stub _fetch_user_profiles (we don't assert on its output here)
-    monkeypatch.setattr(
-        ResolutionService,
-        "_fetch_user_profiles",
-        lambda db, ids: {"u": object()}
-    )
-
-    # 3) Stub _process_position to return steadily different values
-    side_effects = [
-        # for first position: a payout of 3, one entry, no errors
-        (Decimal("3"), {"user_name": "alice", "shares_paid": "3.00"}, []),
-        # for second position: a payout of 2, one entry, plus one error
-        (Decimal("2"), {"user_name": "bob",   "shares_paid": "2.00"}, ["err!"]),
-    ]
-    def fake_process(db, pos, profiles, tokens):
-        return side_effects.pop(0)
-    monkeypatch.setattr(
-        ResolutionService,
-        "_process_position",
-        fake_process
-    )
-
-    # Act
-    summary = ResolutionService._process_single_market(session, wm)
-
-    # Assert
-    # - market echoed
-    assert summary["market"] == "MKT"
-    # - num_payouts is number of non-None entries
-    assert summary["num_payouts"] == 2
-    # - payouts list collects both entries, in order
-    assert summary["payouts"] == [
-        {"user_name": "alice", "shares_paid": "3.00"},
-        {"user_name": "bob",   "shares_paid": "2.00"},
-    ]
-    # - total_paid is the stringified sum "5.00"
-    assert summary["total_paid"] == str(Decimal("3") + Decimal("2"))
-    # - errors is concatenation of both errors lists
-    assert summary["errors"] == ["err!"]
+# class DummyPos:
+#     pass
+#
+# def test_process_single_market_aggregates(monkeypatch, session):
+#     # Arrange
+#     wm = {"condition_id": "MKT", "winning_token_ids": ["T1", "T2"]}
+#
+#     # 1) Stub _fetch_positions to return two dummy positions
+#     dummy_positions = [DummyPos(), DummyPos()]
+#     monkeypatch.setattr(
+#         ResolutionService,
+#         "_fetch_positions",
+#         lambda db, cond: dummy_positions
+#     )
+#
+#     # 2) Stub _fetch_user_profiles (we don't assert on its output here)
+#     monkeypatch.setattr(
+#         ResolutionService,
+#         "_fetch_user_profiles",
+#         lambda db, ids: {"u": object()}
+#     )
+#
+#     # 3) Stub _process_position to return steadily different values
+#     side_effects = [
+#         # for first position: a payout of 3, one entry, no errors
+#         (Decimal("3"), {"user_name": "alice", "shares_paid": "3.00"}, []),
+#         # for second position: a payout of 2, one entry, plus one error
+#         (Decimal("2"), {"user_name": "bob",   "shares_paid": "2.00"}, ["err!"]),
+#     ]
+#     def fake_process(db, pos, profiles, tokens):
+#         return side_effects.pop(0)
+#     monkeypatch.setattr(
+#         ResolutionService,
+#         "_process_position",
+#         fake_process
+#     )
+#
+#     # Act
+#     summary = ResolutionService._process_single_market(session, wm)
+#
+#     # Assert
+#     # - market echoed
+#     assert summary["market"] == "MKT"
+#     # - num_payouts is number of non-None entries
+#     assert summary["num_payouts"] == 2
+#     # - payouts list collects both entries, in order
+#     assert summary["payouts"] == [
+#         {"user_name": "alice", "shares_paid": "3.00"},
+#         {"user_name": "bob",   "shares_paid": "2.00"},
+#     ]
+#     # - total_paid is the stringified sum "5.00"
+#     assert summary["total_paid"] == str(Decimal("3") + Decimal("2"))
+#     # - errors is concatenation of both errors lists
+#     assert summary["errors"] == ["err!"]

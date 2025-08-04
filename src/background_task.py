@@ -1,6 +1,9 @@
 import logging
+from enum import Enum
+
 
 from src.sessions import get_session_context
+from src.market_event_webhook import emit_market_event
 from src.services.market_sync_service import MarketSyncService, MarketSyncError
 from src.services.resolution_service import ResolutionService, ResolutionError
 
@@ -9,6 +12,11 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
 )
 logger = logging.getLogger(__name__)
+
+
+class MarketEventType(Enum):
+    MARKET_ADDED = "market_added"
+    MARKET_RESOLVED = "market_resolved"
 
 # TODO: use BackgroundTasks from fast api to run this in the background
 
@@ -23,6 +31,14 @@ def run_market_sync():
             result = MarketSyncService.sync_markets(session)
             session.commit()
             logger.info(f"Market sync succeeded: {result}", )
+
+            # 1.1) Emit to webhook
+            added_markets = result.get("added_dict_model", [])
+            if added_markets:
+                emit_market_event(
+                    MarketEventType.MARKET_ADDED.value,
+                    {"markets": added_markets}
+                )
 
             # 2) resolve payouts for any removed/untradable markets
             winners = result.get("winners", [])

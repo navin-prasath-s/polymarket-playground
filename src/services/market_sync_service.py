@@ -51,12 +51,13 @@ class MarketSyncService:
             logger.exception("Error fetching stable markets")
             raise MarketSyncError("get_stable_markets", e)
 
-    def add_hot_sync_markets(db: Session, markets: list[dict]) -> list[str]:
+    def add_hot_sync_markets(db: Session, markets: list[dict]) -> tuple[list[str], list[dict]]:
         """
         Stage new SyncHotMarket rows + change logs, skipping any
         condition_ids that already exist.
         """
         added_ids: list[str] = []
+        added_dicts: list[dict] = []
         existing = {m.condition_id for m in db.exec(select(SyncHotMarket)).scalars()}
 
         for mkt in markets:
@@ -65,7 +66,6 @@ class MarketSyncService:
                 continue
 
             try:
-                # pull out just the outcome texts ("Yes", "No", …)
                 outcome_texts = [t.get("outcome") for t in mkt.get("tokens", [])]
 
                 model_obj = SyncHotMarket(
@@ -84,12 +84,13 @@ class MarketSyncService:
                 )
 
                 added_ids.append(cid)
+                added_dicts.append(model_obj.model_dump())
 
             except Exception as e:
                 logger.exception(f"Unexpected error in add_hot_sync_markets for {cid}")
                 raise MarketSyncError("add_hot_sync_markets", e)
 
-        return added_ids
+        return added_ids, added_dicts
 
 
 
@@ -256,7 +257,7 @@ class MarketSyncService:
         to_remove = [cid for cid in tracked_ids if cid not in clob_ids]
 
         # 4. Stage all changes
-        added_tracked = MarketSyncService.add_hot_sync_markets(db, to_add)
+        added_tracked, added_dicts = MarketSyncService.add_hot_sync_markets(db, to_add)
         removed_tracked = MarketSyncService.remove_hot_sync_markets(db, tracked, to_remove)
         added_stable = MarketSyncService.add_stable_markets(
             db, [m for m in to_add if m["condition_id"] not in stable_ids]
@@ -269,6 +270,7 @@ class MarketSyncService:
 
         return {
             "added_tracked": added_tracked,
+            "added_dict_model": added_dicts,
             "removed_tracked": removed_tracked,
             "added_stable": added_stable,
             "outcomes_inserted": outcomes_inserted,
