@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 class MarketEventType(Enum):
     MARKET_ADDED = "market_added"
     MARKET_RESOLVED = "market_resolved"
+    PAYOUT_LOGS = "payout_logs"
 
 # TODO: use BackgroundTasks from fast api to run this in the background
 
@@ -42,13 +43,20 @@ def run_market_sync():
             # 2) resolve payouts for any removed/untradable markets
             markets_with_winning_tokens = result.get("markets_with_winning_tokens", [])
             if markets_with_winning_tokens:
-                payouts = ResolutionService.resolve_market_winners(session, markets_with_winning_tokens)
+                payout_logs = ResolutionService.resolve_market_winners(session, markets_with_winning_tokens)
                 session.commit()
-                logger.info(f"Payouts resolved: {payouts}", )
+                logger.info(f"Payouts resolved: {payout_logs}", )
 
+            # 2.1) Emit resolved markets to webhook
             emit_market_event(
                 MarketEventType.MARKET_RESOLVED.value,
                 {"markets": markets_with_winning_tokens}
+            )
+
+            # 2.2) Emit payout logs to webhook
+            emit_market_event(
+                MarketEventType.PAYOUT_LOGS.value,
+                {"payout_logs": payout_logs}
             )
 
             # combined_payload = {**result, "payouts": payouts}

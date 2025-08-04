@@ -28,22 +28,23 @@ class ResolutionService:
         Orchestrate resolution of multiple markets: fetch data, process each position,
         and collect per-market summaries. Raises ResolutionError on any fatal error.
         """
-        all_results: list[dict] = []
+        all_logs: list[dict] = []
         for wm in winning_markets:
             condition_id = wm.get("condition_id")
             try:
-                result = ResolutionService._process_single_market(db, wm)
-                all_results.append(result)
+                logs  = ResolutionService._process_single_market(db, wm)
+                all_logs.extend(logs)
             except Exception as e:
                 logger.exception(f"Error resolving market {condition_id}")
                 raise ResolutionError("resolve_market_winners", e)
-        return all_results
+        return all_logs
+
 
     @staticmethod
     def _process_single_market(
         db: Session,
         wm: dict
-    ) -> dict:
+    ) -> list[dict]:
         """
         Handle the resolution of a single market: load data, process positions,
         and return the summary dictionary.
@@ -57,29 +58,16 @@ class ResolutionService:
             db, {pos.user_name for pos in positions}
         )
 
-        # Initialize accumulators
-        payout_total = Decimal("0")
-        user_payouts: list[dict] = []
-        errors: list[str] = []
+        payout_logs: list[dict] = []
 
         # Process each position
         for pos in positions:
-            payout, payout_entry, errs = ResolutionService._process_position(
+            payout_log_obj  = ResolutionService._process_position(
                 db, pos, user_profiles, winning_tokens
             )
-            payout_total += payout
-            if payout_entry:
-                user_payouts.append(payout_entry)
-            errors.extend(errs)
+            payout_logs.append(payout_log_obj.model_dump())
 
-        # Build and return summary
-        return {
-            "market": condition_id,
-            "num_payouts": len(user_payouts),
-            "payouts": user_payouts,
-            "total_paid": str(payout_total),
-            "errors": errors,
-        }
+        return payout_logs
 
     @staticmethod
     def _fetch_positions(
@@ -103,66 +91,51 @@ class ResolutionService:
         result = db.exec(stmt)
         return {u.user_name: u for u in result.scalars().all()}
 
+
     @staticmethod
     def _process_position(
         db: Session,
         pos: UserPosition,
         user: dict[str, User],
         winning_tokens: set[str]
-    ) -> tuple[Decimal, dict | None, list[str]]:
+    ) -> PayoutLog | None:
         """
         Process one position: stage a PayoutLog, update profile if winning,
         delete the position, and collect any errors. Returns a tuple:
         (payout_amount, payout_entry or None, list_of_error_strings).
         """
-        cid = pos.market
-        user_name = pos.user_name
-        payout_amount = Decimal("0")
-        payout_entry = None
-        errors: list[str] = []
+
         is_winner = pos.token in winning_tokens
 
         # Stage log
-        db.add(
-            PayoutLog(
-                user_name=user_name,
-                market=cid,
+        payout_log_obj  = PayoutLog(
+                user_name=pos.user_name,
+                market=pos.market,
                 token=pos.token,
                 shares_paid=(pos.shares if is_winner else Decimal("0")),
                 is_winner=is_winner,
             )
-        )
+        db.add(payout_log_obj )
 
         # Update balance if winner
         if is_winner:
             try:
-                profile = user.get(user_name)
+                profile = user.get(pos.user_name)
                 if profile:
                     profile.balance += pos.shares
-                    payout_amount = pos.shares
-                    payout_entry = {
-                        "user_name": user_name,
-                        "shares_paid": str(pos.shares)
-                    }
             except Exception as e:
-                logger.exception(f"Failed to update balance for user {user_name}")
-                errors.append(
-                    f"Failed to update balance for user {user_name}: {e}"
-                )
+                logger.exception(f"Failed to update balance for user {pos.user_name}")
+
 
         # Delete position
         try:
             db.delete(pos)
         except Exception as e:
             logger.exception(
-                f"Failed to delete UserPosition for user {user_name} market {cid} token {pos.token}"
-            )
-            errors.append(
-                f"Failed to delete position for user {user_name}, "
-                f"market {cid}, token {pos.token}: {e}"
+                f"Failed to delete UserPosition for user {pos.user_name} market {pos.market} token {pos.token}"
             )
 
-        return payout_amount, payout_entry, errors
+        return payout_log_obj
 
 
 
