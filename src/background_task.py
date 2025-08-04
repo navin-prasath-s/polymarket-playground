@@ -1,4 +1,3 @@
-import json
 import logging
 
 from src.sessions import get_session_context
