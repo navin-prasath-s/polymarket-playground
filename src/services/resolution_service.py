@@ -89,7 +89,7 @@ class ResolutionService:
             return {}
         stmt = select(User).where(User.name.in_(names))
         result = db.exec(stmt)
-        return {u.user_name: u for u in result.scalars().all()}
+        return {u.name: u for u in result.scalars().all()}
 
 
     @staticmethod
@@ -115,7 +115,7 @@ class ResolutionService:
                 shares_paid=(pos.shares if is_winner else Decimal("0")),
                 is_winner=is_winner,
             )
-        db.add(payout_log_obj )
+        db.add(payout_log_obj)
 
         # Update balance if winner
         if is_winner:

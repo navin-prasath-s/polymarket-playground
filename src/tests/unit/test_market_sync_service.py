@@ -2,7 +2,6 @@ import json
 
 import pytest
 from sqlalchemy.future import select
-from sqlmodel import Session
 
 from src.background_task import run_market_sync
 from src.market_event_webhook import MarketEventType
