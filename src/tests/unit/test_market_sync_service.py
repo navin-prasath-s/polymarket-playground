@@ -4,7 +4,8 @@ import pytest
 from sqlalchemy.future import select
 from sqlmodel import Session
 
-
+from src.background_task import run_market_sync
+from src.market_event_webhook import MarketEventType
 from src.models.market_change_log import MarketChangeLog, MarketChangeType
 from src.models.market_outcome import MarketOutcome
 from src.models.sync_hot_market import SyncHotMarket
@@ -82,7 +83,8 @@ def test_add_tracked_markets_happy_path(db_session):
     ]
 
     # Act
-    added = MarketSyncService.add_hot_sync_markets(db_session, markets)
+    added, _ = MarketSyncService.add_hot_sync_markets(db_session, markets)
+    db_session.commit()
 
     # Assert return value
     assert set(added) == {"M1", "M2"}
@@ -149,6 +151,7 @@ def test_add_stable_markets_happy_path(db_session):
 
     # Act
     added = MarketSyncService.add_stable_markets(db_session, markets)
+    db_session.commit()
 
     # Assert return value
     assert set(added) == {"S1", "S2"}
@@ -228,6 +231,7 @@ def test_add_market_outcomes_happy_path(db_session):
 
     # Act
     inserted = MarketSyncService.add_stable_market_outcomes(db_session, markets)
+    db_session.commit()
 
     # Assert return value
     assert set(inserted) == {"M42:TK_A", "M42:TK_B"}
@@ -302,7 +306,7 @@ def test_sync_markets_full_flow(db_session, monkeypatch):
     assert result["added_stable"]      == ["NEW"]
     assert set(result["outcomes_inserted"]) == {"NEW:T1", "NEW:T2"}
     assert result["marked_untradable"] == ["OLD"]
-    assert result["winners"]          == [{"condition_id": "OLD", "winning_token_ids": ["T1"]}]
+    assert result["markets_with_winning_tokens"] == [{"condition_id": "OLD", "winning_token_ids": ["T1"]}]
 
     # ─── Assert DB state: sync_hot_markets ─────────────────────────────────────
     hot = db_session.exec(select(SyncHotMarket)).scalars().all()
@@ -419,7 +423,8 @@ def test_sync_markets_with_overlap(db_session, monkeypatch):
     assert result["added_stable"]      == ["NEW"]
     assert set(result["outcomes_inserted"]) == {"NEW:N1", "NEW:N2"}
     assert result["marked_untradable"] == ["OLD"]
-    assert result["winners"]          == [{"condition_id": "OLD", "winning_token_ids": ["T1"]}]
+    assert result["markets_with_winning_tokens"] == [{"condition_id": "OLD", "winning_token_ids": ["T1"]}]
+
 
     # ─── DB: sync_hot_markets ──────────────────────────────────────────────────
     hot = db_session.exec(select(SyncHotMarket)).scalars().all()
@@ -454,3 +459,56 @@ def test_sync_markets_with_overlap(db_session, monkeypatch):
         ("NEW", MarketChangeType.ADDED),
         ("OLD", MarketChangeType.DELETED),
     }
+
+
+def test_market_added_event_emitted(monkeypatch, db_session):
+    # Arrange: Add a new market (that will be "added" by sync)
+    mkt = SyncHotMarket(
+        condition_id="MTEST",
+        question="Test Q",
+        description="Test D",
+        tokens='["Yes", "No"]'
+    )
+    db_session.add(mkt)
+    db_session.commit()
+
+    # Prepare to capture emitted events
+
+    emitted = []
+    def fake_emit_market_event(event_type, payload):
+        print(f"FAKE CALLED! {event_type=}, {payload=}")
+        emitted.append((event_type, payload))
+
+    monkeypatch.setattr(
+        "src.background_task.emit_market_event", fake_emit_market_event
+    )
+
+    # Monkeypatch MarketSyncService.sync_markets to return a fake result
+    monkeypatch.setattr(
+        "src.services.market_sync_service.MarketSyncService.sync_markets",
+        staticmethod(lambda session: {
+            "added_dict_model": [mkt.model_dump()],
+            "added_tracked": ["MTEST"],
+            "removed_tracked": [],
+            "added_stable": [],
+            "outcomes_inserted": [],
+            "marked_untradable": [],
+            "markets_with_winning_tokens": [],
+        })
+    )
+
+    # Act
+    run_market_sync()
+
+    # Assert: Was emit_market_event called as expected?
+    assert emitted[0][0] == MarketEventType.MARKET_ADDED.value
+    assert emitted[1][0] == MarketEventType.MARKET_RESOLVED.value
+    assert emitted[2][0] == MarketEventType.PAYOUT_LOGS.value
+
+    expected_added = {'markets': [mkt.model_dump()]}
+    expected_resolved = {'markets': []}
+    expected_payouts = {'payout_logs': []}
+
+    assert emitted[0][1] == expected_added
+    assert emitted[1][1] == expected_resolved
+    assert emitted[2][1] == expected_payouts

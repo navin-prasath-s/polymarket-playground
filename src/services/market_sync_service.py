@@ -51,6 +51,7 @@ class MarketSyncService:
             logger.exception("Error fetching stable markets")
             raise MarketSyncError("get_stable_markets", e)
 
+    @staticmethod
     def add_hot_sync_markets(db: Session, markets: list[dict]) -> tuple[list[str], list[dict]]:
         """
         Stage new SyncHotMarket rows + change logs, skipping any

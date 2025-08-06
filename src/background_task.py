@@ -35,6 +35,7 @@ def run_market_sync():
 
             # 2) resolve payouts for any removed/untradable markets
             markets_with_winning_tokens = result.get("markets_with_winning_tokens", [])
+            payout_logs = []
             if markets_with_winning_tokens:
                 payout_logs = ResolutionService.resolve_market_winners(session, markets_with_winning_tokens)
                 session.commit()
