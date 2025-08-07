@@ -144,7 +144,6 @@ async def create_buy_order(
 
 
     return {
-        "order_id": new_order.order_id,
         "status": "success",
         "details": {
             "amount_usdc": total_cost,
@@ -276,7 +275,6 @@ def create_sell_order(
         )
 
     return {
-        "order_id": new_order.order_id,
         "status":   "success",
         "details": {
             "amount_usdc":  proceeds,

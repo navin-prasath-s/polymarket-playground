@@ -1,12 +1,18 @@
-const meta = document.querySelector('meta[property="fc:frame:post_url"]');
-if (meta) {
-  const url = meta.content;
-  const match = url.match(/market\/(0x[a-fA-F0-9]{64})/);
-  if (match) {
-    console.log("conditionId:", match[1]);
-  } else {
-    console.log("conditionId not found in meta tag!");
+(() => {
+  const nextData = JSON.parse(document.getElementById('__NEXT_DATA__').textContent);
+  const markets = nextData?.props?.pageProps?.dehydratedState?.queries?.[0]?.state?.data?.markets || [];
+  for (const market of markets) {
+    const cid = market.conditionId;
+    const outcomes = market.outcomes || [];
+    const tokenIds = market.clobTokenIds || [];
+    const tokenMap = {};
+    for (let i = 0; i < Math.min(tokenIds.length, outcomes.length); ++i) {
+      tokenMap[outcomes[i]] = tokenIds[i];
+    }
+    console.log({
+      market: cid,
+      question: market.question,
+      token: tokenMap
+    });
   }
-} else {
-  console.log("Meta tag not found!");
-}
+})();

@@ -12,13 +12,13 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-# TODO: use BackgroundTasks from fast api to run this in the background
 
 def run_market_sync():
     """
     Entry point for the background market synchronization task.
     Opens a session, runs the full sync pipeline, and commits or rolls back.
     """
+    logger.info("Market sync job started")
     with get_session_context() as session:
         try:
             # 1) sync markets
@@ -73,8 +73,9 @@ def run_market_sync():
             session.rollback()
             logger.exception(f"Unexpected error during market sync: {e}")
 
+    logger.info("Market sync job ended")
 
-
-if __name__ == "__main__":
-    run_market_sync()
-
+#
+# if __name__ == "__main__":
+#     run_market_sync()
+#
