@@ -118,3 +118,38 @@ async def reset_user_balance(
 
 
 
+@router.get(
+    "/{user_name}",
+    response_model=UserRead,
+    status_code=status.HTTP_200_OK,
+    description="Fetch a user by name.",
+    responses={
+        status.HTTP_404_NOT_FOUND: {"description": "User not found"},
+        status.HTTP_500_INTERNAL_SERVER_ERROR: {"description": "An unexpected error occurred."},
+    },
+)
+async def get_user(
+    user_name: str,
+    db: Session = Depends(get_session),
+):
+    try:
+        user_db = db.exec(
+            select(User).where(User.name == user_name)
+        ).one_or_none()
+
+        if not user_db:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"User {user_name} not found",
+            )
+
+        return user_db
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception(f"Failed to fetch user {user_name}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred.",
+        )

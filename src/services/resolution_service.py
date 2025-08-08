@@ -136,5 +136,3 @@ class ResolutionService:
             )
 
         return payout_log_obj
-
-

@@ -1,0 +1,147 @@
+import os
+import time
+from decimal import Decimal
+from typing import Any, Dict, Optional, Iterable
+
+import httpx
+
+
+_LEVELS = {"L1": 1, "L2": 2}
+
+class BaseClient():
+    """
+    Internal base with full logic. Do not instantiate directly.
+    Subclasses (e.g., Client) inherit endpoints via mixins.
+    """
+
+    def __new__(cls, *args, **kwargs):
+        if cls is BaseClient:
+            raise TypeError("BaseClient is internal. Use `Client(...)` instead.")
+        return super().__new__(cls)
+
+    def __init__(
+        self,
+        url: str = "http://127.0.0.1:8000",
+        *,
+        allow: Iterable[str] = (),
+        timeout: float = 5.0,
+        retries: int = 3,
+        backoff: float = 0.5,
+        l1_key: Optional[str] = None,
+        l2_key: Optional[str] = None,
+    ):
+        self.base_url = url.rstrip("/")
+        self.allow = {lvl.upper() for lvl in allow}
+        self.timeout = timeout
+        self.retries = retries
+        self.backoff = backoff
+
+        self.l1_key = l1_key or os.getenv("L1_KEY")
+        self.l2_key = l2_key or os.getenv("L2_KEY")
+
+        self._client = httpx.Client(timeout=self.timeout, base_url=self.base_url)
+
+    def close(self):
+        self._client.close()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *a):
+        self.close()
+
+
+    def _check_access(self, required: Optional[str]):
+        """Raise if trying to call a protected endpoint without permission."""
+        if required is None:
+            return  # open endpoint
+        if required not in self.allow:
+            raise PermissionError(f"{required} permission required for this endpoint.")
+        if required == "L1" and not self.l1_key:
+            raise PermissionError("L1 key not provided.")
+        if required == "L2" and not self.l2_key:
+            raise PermissionError("L2 key not provided.")
+
+    def _headers_for(self, required: Optional[str]) -> Dict[str, str]:
+        if required == "L1" and self.l1_key:
+            return {"X-API-Key": self.l1_key}
+        if required == "L2" and self.l2_key:
+            return {"X-API-Key": self.l2_key}
+        return {}
+
+
+    def _request(
+            self,
+            method: str,
+            path: str,
+            *,
+            params: Dict[str, Any] | None = None,
+            json: Dict[str, Any] | None = None,
+            required: Optional[str] = None,
+    ) -> httpx.Response:
+        self._check_access(required)
+        headers = self._headers_for(required)
+
+        last_exc = None
+        for attempt in range(1, self.retries + 1):
+            try:
+                resp = self._client.request(method, path, params=params, json=json, headers=headers)
+                resp.raise_for_status()
+                return resp
+            except (httpx.ReadTimeout, httpx.ConnectError, httpx.RemoteProtocolError) as e:
+                last_exc = e
+                if attempt == self.retries:
+                    raise
+                time.sleep(self.backoff * (2 ** (attempt - 1)))
+        raise last_exc or RuntimeError("Unknown request failure")
+
+
+
+class Client(BaseClient):
+    """
+       Public client.
+       Usage:
+           client = Client(url="http://127.0.0.1:8000", allow=("L1","L2"))
+           client.get_health()
+       """
+
+    def get_health(self) -> Dict[str, Any]:
+        """Get health status of the server."""
+        return self._request("GET", "/").json()
+
+
+
+    def create_user(self, name: str, balance: Decimal|str|None = None):
+        """
+        Create a new user.
+        If `balance` is omitted (None), the server will use its default (10000.00).
+        """
+        payload = {"name": name}
+        if balance is not None:
+            payload["balance"] = str(balance)  # str() for Decimal safety in JSON
+
+        return self._request("POST", "/users/", json=payload).json()
+
+
+    def get_user(self, name: str):
+        """
+        Fetch a user by name.
+        Returns JSON from the API (dict with 'name' and 'balance').
+        """
+        return self._request("GET", f"/users/{name}").json()
+
+    def reset_user_balance(self, name: str, balance: Decimal | float | str | None = None):
+        """
+        Reset a user's balance (requires L1 key).
+        If `balance` is None, the server resets it to 10000.00.
+        """
+        payload = {}
+        if balance is not None:
+            payload["balance"] = str(balance)
+
+        return self._request(
+            "PATCH",
+            f"/users/{name}/reset-balance",
+            json=payload or None,
+            required="L1",  # ensure L1 key is present
+        ).json()

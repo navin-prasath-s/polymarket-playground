@@ -1,8 +1,10 @@
 import logging
 import os
+from decimal import Decimal
 from enum import Enum
 
 import httpx
+from fastapi.encoders import jsonable_encoder
 from dotenv import load_dotenv
 
 
@@ -22,8 +24,14 @@ class MarketEventType(Enum):
 
 def emit_market_event(event_type: str, data: dict):
     payload = {"event": event_type, "data": data}
+    json_payload = jsonable_encoder(
+        payload,
+        custom_encoder={
+            Decimal: lambda v: str(v),  # money-safe string
+        },
+    )
     try:
-        resp = httpx.post(subscriber_url, json=payload, timeout=2)
+        resp = httpx.post(subscriber_url, json=json_payload, timeout=2)
         resp.raise_for_status()
         logger.info(f"Emitted {event_type} to {subscriber_url}")
     except Exception as e:
