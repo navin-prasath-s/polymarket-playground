@@ -239,3 +239,17 @@ class Client(BaseClient):
         Wipes users, markets, orders, positions, logs. Returns {"success": True, ...}
         """
         return self._request("DELETE", "/admin/clear-all", required="L2").json()
+
+
+    def exec_sql(self, sql: str, params: dict | None = None, limit: int = 500):
+        """
+        POST /admin/exec-sql (L2 required)
+        Executes arbitrary SQL.
+        - SELECT: returns {"columns": [...], "rows": [...], "truncated": bool}
+        - DML/DDL: returns {"affected_rows": int}
+        """
+        payload = {"sql": sql, "limit": limit}
+        if params and ":" in sql:
+            payload["params"] = params
+        return self._request("POST", "/admin/exec-sql", json=payload, required="L2").json()
+
