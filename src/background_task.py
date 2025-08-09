@@ -53,12 +53,6 @@ def run_market_sync():
                 {"payout_logs": payout_logs}
             )
 
-            # combined_payload = {**result, "payouts": payouts}
-            # note_path = "/mnt/data/market_sync_note.txt"
-            # with open(note_path, "w") as f:
-            #     json.dump(combined_payload, f, indent=2)
-            # logger.info(f"Wrote combined payload to {note_path}")
-
         except MarketSyncError as e:
             session.rollback()
             logger.exception(
@@ -75,7 +69,3 @@ def run_market_sync():
 
     logger.info("Market sync job ended")
 
-
-# if __name__ == "__main__":
-#     run_market_sync()
-#
