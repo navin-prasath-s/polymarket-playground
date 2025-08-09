@@ -11,7 +11,7 @@ from src.background_task import run_market_sync
 
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 scheduler = BackgroundScheduler()

@@ -8,7 +8,7 @@ import httpx
 
 _LEVELS = {"L1": 1, "L2": 2}
 
-class BaseClient():
+class BaseClient:
     """
     Internal base with full logic. Do not instantiate directly.
     Subclasses (e.g., Client) inherit endpoints via mixins.
@@ -105,6 +105,7 @@ class Client(BaseClient):
            client.get_health()
        """
 
+
     def get_health(self) -> Dict[str, Any]:
         """Get health status of the server."""
         return self._request("GET", "/").json()
@@ -130,18 +131,21 @@ class Client(BaseClient):
         """
         return self._request("GET", f"/users/{name}").json()
 
+
     def reset_user_balance(self, name: str, balance: Decimal | float | str | None = None):
         """
         Reset a user's balance (requires L1 key).
         If `balance` is None, the server resets it to 10000.00.
         """
-        payload = {}
-        if balance is not None:
-            payload["balance"] = str(balance)
-
-        return self._request(
-            "PATCH",
-            f"/users/{name}/reset-balance",
-            json=payload or None,
-            required="L1",  # ensure L1 key is present
-        ).json()
+        payload = {} if balance is None else {"balance": str(balance)}
+        try:
+            return self._request(
+                "PATCH",
+                f"/users/{name}/reset-balance",
+                json=payload,
+                required="L1",
+            ).json()
+        except httpx.HTTPStatusError as e:
+            print("STATUS:", e.response.status_code)
+            print("BODY:", e.response.text)  # <- shows FastAPI error JSON
+            raise

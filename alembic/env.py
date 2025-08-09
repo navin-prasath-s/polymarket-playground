@@ -16,6 +16,7 @@ from src.models.order_fill import OrderFill
 from src.models.payout_log import PayoutLog
 from src.models.user import User
 from src.models.user_position import UserPosition
+from src.models.reset_log import ResetLog
 
 
 load_dotenv()

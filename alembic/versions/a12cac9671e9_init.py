@@ -1,8 +1,8 @@
 """init
 
-Revision ID: 7492b40ef4bc
+Revision ID: a12cac9671e9
 Revises: 
-Create Date: 2025-08-02 00:48:12.181443
+Create Date: 2025-08-08 22:47:37.073498
 
 """
 from typing import Sequence, Union
@@ -13,7 +13,7 @@ import sqlmodel
 
 
 # revision identifiers, used by Alembic.
-revision: str = '7492b40ef4bc'
+revision: str = 'a12cac9671e9'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -54,6 +54,14 @@ def upgrade() -> None:
     sa.Column('is_winner', sa.Boolean(), nullable=False),
     sa.ForeignKeyConstraint(['market'], ['markets.condition_id'], ),
     sa.PrimaryKeyConstraint('market', 'token')
+    )
+    op.create_table('reset_logs',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('user_name', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
+    sa.Column('balance_reset', sa.Numeric(precision=14, scale=2), nullable=False),
+    sa.Column('timestamp', sa.DateTime(), nullable=False),
+    sa.ForeignKeyConstraint(['user_name'], ['users.name'], ),
+    sa.PrimaryKeyConstraint('id')
     )
     op.create_table('orders',
     sa.Column('order_id', sa.Integer(), nullable=False),
@@ -115,6 +123,7 @@ def downgrade() -> None:
     op.drop_table('user_positions')
     op.drop_table('payout_logs')
     op.drop_table('orders')
+    op.drop_table('reset_logs')
     op.drop_table('market_outcomes')
     op.drop_table('users')
     op.drop_table('sync_hot_markets')

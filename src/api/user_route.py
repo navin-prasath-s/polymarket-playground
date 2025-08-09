@@ -69,7 +69,7 @@ async def create_user(
 )
 async def reset_user_balance(
     user_name: str,
-    user_input: BalanceUpdate = Body(default=None),
+    user_input: BalanceUpdate = Body(default=BalanceUpdate()),
     db: Session = Depends(get_session),
 ):
     try:
@@ -109,7 +109,7 @@ async def reset_user_balance(
         raise
 
     except Exception as e:
-        logger.debug(f"Failed to reset user {user_name}: {e}"),
+        logger.exception(f"Failed to reset user {user_name}: {e}"),
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
