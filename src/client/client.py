@@ -3,8 +3,10 @@ import time
 from decimal import Decimal
 from typing import Any, Dict, Optional, Iterable
 
+
 import httpx
 
+url = "http://127.0.0.1:8000"
 
 _LEVELS = {"L1": 1, "L2": 2}
 
@@ -21,9 +23,8 @@ class BaseClient:
 
     def __init__(
         self,
-        url: str = "http://127.0.0.1:8000",
+        url: str,
         *,
-        allow: Iterable[str] = (),
         timeout: float = 5.0,
         retries: int = 3,
         backoff: float = 0.5,
@@ -31,7 +32,7 @@ class BaseClient:
         l2_key: Optional[str] = None,
     ):
         self.base_url = url.rstrip("/")
-        self.allow = {lvl.upper() for lvl in allow}
+
         self.timeout = timeout
         self.retries = retries
         self.backoff = backoff
@@ -39,7 +40,14 @@ class BaseClient:
         self.l1_key = l1_key or os.getenv("L1_KEY")
         self.l2_key = l2_key or os.getenv("L2_KEY")
 
+        self.permissions = set()
+        if self.l1_key:
+            self.permissions.add("L1")
+        if self.l2_key:
+            self.permissions.add("L2")
+
         self._client = httpx.Client(timeout=self.timeout, base_url=self.base_url)
+
 
     def close(self):
         self._client.close()
@@ -50,17 +58,16 @@ class BaseClient:
     def __exit__(self, *a):
         self.close()
 
-
     def _check_access(self, required: Optional[str]):
         """Raise if trying to call a protected endpoint without permission."""
         if required is None:
             return  # open endpoint
-        if required not in self.allow:
-            raise PermissionError(f"{required} permission required for this endpoint.")
-        if required == "L1" and not self.l1_key:
-            raise PermissionError("L1 key not provided.")
-        if required == "L2" and not self.l2_key:
-            raise PermissionError("L2 key not provided.")
+        if required not in self.permissions:
+            available = ", ".join(self.permissions) if self.permissions else "none"
+            raise PermissionError(
+                f"{required} permission required for this endpoint. "
+                f"Available permissions: {available}"
+            )
 
     def _headers_for(self, required: Optional[str]) -> Dict[str, str]:
         if required == "L1" and self.l1_key:
@@ -71,13 +78,13 @@ class BaseClient:
 
 
     def _request(
-            self,
-            method: str,
-            path: str,
-            *,
-            params: Dict[str, Any] | None = None,
-            json: Dict[str, Any] | None = None,
-            required: Optional[str] = None,
+        self,
+        method: str,
+        path: str,
+        *,
+        params: Dict[str, Any] | None = None,
+        json: Dict[str, Any] | None = None,
+        required: Optional[str] = None,
     ) -> httpx.Response:
         self._check_access(required)
         headers = self._headers_for(required)
@@ -149,3 +156,6 @@ class Client(BaseClient):
             print("STATUS:", e.response.status_code)
             print("BODY:", e.response.text)  # <- shows FastAPI error JSON
             raise
+
+
+
