@@ -320,16 +320,3 @@ async def get_user_orders(
         raise HTTPException(404, "user not found")
     orders = db.exec(select(Order).where(Order.user_name == user_name)).all()
     return orders
-
-
-@router.get(
-    "/",
-    response_model=list[OrderRead],
-    status_code=status.HTTP_200_OK,
-    description="Get all orders in the system."
-)
-async def get_all_orders(
-    db: Session = Depends(get_session),
-):
-    orders = db.exec(select(Order)).all()
-    return orders

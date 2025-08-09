@@ -154,8 +154,88 @@ class Client(BaseClient):
             ).json()
         except httpx.HTTPStatusError as e:
             print("STATUS:", e.response.status_code)
-            print("BODY:", e.response.text)  # <- shows FastAPI error JSON
+            print("BODY:", e.response.text)
             raise
 
 
 
+    def buy(
+            self,
+            *,
+            user_name: str,
+            market: str,
+            token: str,
+            amount_usdc: Decimal | float | str,
+            order_type: str = "MARKET"
+    ):
+        """
+        Create a market BUY order.
+        Server route: POST /orders/buy
+        """
+        payload = {
+            "user_name": user_name,
+            "market": market,
+            "token": token,
+            "amount_usdc": str(amount_usdc),
+            "order_type": order_type,
+        }
+        return self._request("POST", "/orders/buy", json=payload).json()
+
+
+    def sell(
+            self,
+            *,
+            user_name: str,
+            market: str,
+            token: str,
+            shares: Decimal | float | str,
+            order_type: str = "MARKET"
+    ):
+        """
+        Create a market SELL order.
+        Server route: POST /orders/sell
+        """
+        payload = {
+            "user_name": user_name,
+            "market": market,
+            "token": token,
+            "shares": str(shares),
+            "order_type": order_type,
+        }
+        return self._request("POST", "/orders/sell", json=payload).json()
+
+    def list_orders(self):
+        """
+        GET /orders/ — returns all orders (with fills included by the server).
+        """
+        return self._request("GET", "/orders/").json()
+
+
+    def list_orders_by_user(self, user_name: str):
+        """
+        GET /orders/{user_name} — returns all orders placed by the user.
+        """
+        return self._request("GET", f"/orders/{user_name}").json()
+
+
+    def list_positions(self):
+        """
+        GET /positions — returns all user positions in the system.
+        """
+        return self._request("GET", "/positions").json()
+
+
+    def list_positions_by_user(self, user_name: str):
+        """
+        GET /positions/{user_name} — returns all positions for the given user.
+        Raises HTTP 404 if the user does not exist.
+        """
+        return self._request("GET", f"/positions/{user_name}").json()
+
+
+    def delete_all_data(self):
+        """
+        DELETE /admin/clear-all  (L2 required)
+        Wipes users, markets, orders, positions, logs. Returns {"success": True, ...}
+        """
+        return self._request("DELETE", "/admin/clear-all", required="L2").json()
