@@ -78,7 +78,7 @@ The system consists of two main components:
 
 Start the FastAPI backend:
 ```bash
-uvicorn src.app:app --reload --port 8000
+uvicorn src.app:app --port 8000
 ```
 - The API will be available at: [http://127.0.0.1:8000](http://127.0.0.1:8000)
 - Interactive API docs: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
