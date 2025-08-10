@@ -1,6 +1,6 @@
 # polymarket-playground
 
-A modular system for simulating and interacting with prediction markets.
+Paper-trading Polymarket server and client. Intended as a safe playground for automated trading, strategy prototyping, and offline backtesting—without touching real funds or accounts.
 
 ---
 
