@@ -86,36 +86,6 @@ Run the built-in listener first:
 ```bash
 python src/client/webhook_listener.py
 
-```python
-from webhook_listener import WebhookListener
-
-# Create a listener that binds to localhost:8001 and listens at /market-event
-wl = WebhookListener(port=8001, path="/market-event")
-
-# Called when new tradable markets are added
-def on_market_added(data: dict):
-    print("[market_added]", len(data.get("markets", [])))
-
-# Called when markets are resolved (i.e., winning token determined)
-def on_market_resolved(data: dict):
-    print("[market_resolved]", data)
-
-# Called when payout logs are emitted after resolution
-def on_payout_logs(data: dict):
-    print("[payout_logs]", len(data.get("payout_logs", [])))
-
-# Subscribe handlers to events
-wl.on("market_added", on_market_added)
-wl.on("market_resolved", on_market_resolved)
-wl.on("payout_logs", on_payout_logs)
-
-# Start listening
-wl.start()
-input("Listening… press Enter to stop.\n")
-wl.stop()
-    python src/client/webhook_listener.py
-
-    
 
    
 
