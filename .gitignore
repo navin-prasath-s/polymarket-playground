@@ -182,4 +182,5 @@ cython_debug/
 
 
 
-polymarket_playground.db
+*.db
+*.sqbpro
