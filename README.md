@@ -1,6 +1,6 @@
 # polymarket-playground
 
-Paper-trading Polymarket server and client. Intended as a safe playground for automated trading, strategy prototyping, and offline backtesting—without touching real funds or accounts.
+Paper-trading Polymarket server and client. Intended as a safe playground for automated trading, strategy prototyping, and offline backtesting without using real funds or accounts.
 
 ---
 
