@@ -12,7 +12,7 @@ db_path = os.getenv("DB_PATH")
 db_url = f"sqlite:///{db_path}"
 
 
-engine = create_engine(db_url, echo=True)
+engine = create_engine(db_url, echo=False)
 
 
 def get_session() -> Generator[Session, None, None]:

@@ -1,0 +1,45 @@
+# Python artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Virtual environments
+.env
+.venv/
+env/
+
+# Development files
+.git/
+.gitignore
+*.md
+
+# Docker files
+Dockerfile*
+docker-compose*
+.dockerignore
+
+# IDE/Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Test and coverage
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# Logs
+*.log
+
+# Database files
+*.db
+*.sqlite3
+
+# Misc
+.cursorignore
+.cursorindexingignore
+*.sqbpro
