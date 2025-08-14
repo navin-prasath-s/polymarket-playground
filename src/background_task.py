@@ -6,7 +6,7 @@ from src.services.market_sync_service import MarketSyncService, MarketSyncError
 from src.services.resolution_service import ResolutionService, ResolutionError
 
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.DEBUG,
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
 )
 logger = logging.getLogger(__name__)

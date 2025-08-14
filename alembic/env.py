@@ -1,5 +1,7 @@
 from logging.config import fileConfig
 import os
+from pathlib import Path
+
 from dotenv import load_dotenv
 
 from sqlalchemy import engine_from_config
@@ -19,10 +21,14 @@ from src.models.user_position import UserPosition
 from src.models.reset_log import ResetLog
 
 
+BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv()
 
-db_path = os.getenv("DB_PATH")
-db_url = f"sqlite:///{db_path}"
+
+
+db_path_env = os.getenv("DB_PATH", "db/polymarket_playground.db")
+db_path = (BASE_DIR / db_path_env).resolve()
+db_url = f"sqlite:///{str(db_path)}"
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

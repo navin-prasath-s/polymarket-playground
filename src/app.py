@@ -40,6 +40,6 @@ app.include_router(order_route.router)
 app.include_router(position_route.router)
 app.include_router(admin_route.router)
 
-# uvicorn src.api.app:app --reload --port 8000
+# uvicorn src.app:app --reload --port 8000
 
 

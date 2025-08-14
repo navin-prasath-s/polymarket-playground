@@ -56,7 +56,7 @@ The system consists of two main components:
     Create a `.env` file in the project root with the following keys:
     ```
     # Path to your SQLite database file
-    DB_PATH=polymarket_playground.db
+    DB_PATH=db/polymarket_playground.db
 
     # API keys for access control
     L1_KEY=abc
