@@ -6,8 +6,8 @@ from fastapi import Depends, HTTPException, Security
 from fastapi.security.api_key import APIKeyHeader
 
 load_dotenv()
-L1_KEY = os.getenv("L1_KEY")
-L2_KEY = os.getenv("L2_KEY")
+L1_KEY = os.getenv("L1_KEY", "abc")
+L2_KEY = os.getenv("L2_KEY", "def")
 
 
 api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
