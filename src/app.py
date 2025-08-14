@@ -1,6 +1,6 @@
 import logging
 from contextlib import asynccontextmanager
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from fastapi import FastAPI
@@ -25,7 +25,7 @@ async def lifespan(app: FastAPI):
                       minutes=5,
                       max_instances=1,
                       coalesce=True,
-                      next_run_time=datetime.now())
+                      next_run_time=datetime.now() + timedelta(seconds=10))
     scheduler.start()
     yield
     scheduler.shutdown()

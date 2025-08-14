@@ -8,7 +8,7 @@ from sqlmodel import create_engine, Session
 load_dotenv()
 
 
-db_path = os.getenv("DB_PATH")
+db_path = os.getenv("DB_PATH", "db/polymarket_playground.db")
 db_url = f"sqlite:///{db_path}"
 
 

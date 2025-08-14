@@ -1,5 +1,6 @@
 import json
 import logging
+from collections import defaultdict
 
 from sqlmodel import Session
 from sqlalchemy.future import select
@@ -167,27 +168,46 @@ class MarketSyncService:
             logger.exception("Error in mark_markets_untradable")
             raise MarketSyncError("mark_markets_untradable", e)
 
-
-
     @staticmethod
     def add_stable_market_outcomes(db: Session, markets: list[dict]) -> list[str]:
-        """
-        Stage new MarketOutcome entries in the session.
-        Raises MarketSyncError on failure.
-        """
         try:
-            inserted_keys: list[str] = []
-            for market in markets:
-                cid = market["condition_id"]
-                for token_info in market.get("tokens", []):
-                    obj = MarketOutcome(
-                        market=cid,
-                        token=token_info["token_id"],
-                        outcome_text=token_info.get("outcome")
-                    )
-                    db.add(obj)
-                    inserted_keys.append(f"{cid}:{token_info['token_id']}")
-            return inserted_keys
+            with db.no_autoflush:
+                desired = []  # list[(cid, token_id, outcome_text)]
+                for m in markets:
+                    cid = m["condition_id"]
+                    for t in (m.get("tokens") or []):
+                        tok = (t.get("token_id") or "").strip()
+                        if not tok:
+                            # you chose to skip empties; fine
+                            logger.debug(f"Skipping empty token for market: {cid}")
+                            continue
+                        desired.append((cid, tok, (t.get("outcome") or "").strip() or None))
+
+                if not desired:
+                    return []
+
+                by_market = defaultdict(list)
+                for cid, tok, _ in desired:
+                    by_market[cid].append(tok)
+
+                existing: set[tuple[str, str]] = set()
+                for cid, toks in by_market.items():
+                    if not toks:
+                        continue
+                    rows = db.exec(
+                        select(MarketOutcome.market, MarketOutcome.token)
+                        .where(MarketOutcome.market == cid, MarketOutcome.token.in_(toks))
+                    ).all()
+                    existing.update(rows)
+
+                to_insert = [(cid, tok, text) for (cid, tok, text) in desired if (cid, tok) not in existing]
+
+                inserted_keys: list[str] = []
+                for cid, tok, text in to_insert:
+                    db.add(MarketOutcome(market=cid, token=tok, outcome_text=text))
+                    inserted_keys.append(f"{cid}:{tok}")
+
+                return inserted_keys
 
         except Exception as e:
             logger.exception("Error in add_market_outcomes")
