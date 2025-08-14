@@ -5,12 +5,8 @@ from src.market_event_webhook import emit_market_event, MarketEventType
 from src.services.market_sync_service import MarketSyncService, MarketSyncError
 from src.services.resolution_service import ResolutionService, ResolutionError
 
-logging.basicConfig(
-    level=logging.DEBUG,
-    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
-)
-logger = logging.getLogger(__name__)
 
+logger = logging.getLogger(__name__)
 
 
 def run_market_sync():
@@ -24,7 +20,7 @@ def run_market_sync():
             # 1) sync markets
             result = MarketSyncService.sync_markets(session)
             session.commit()
-            logger.info(f"Market sync succeeded: {result}", )
+            logger.debug(f"Market sync succeeded: {result}", )
 
             # 1.1) Emit added markets to webhook
             added_markets = result.get("added_dict_model", [])
@@ -39,7 +35,7 @@ def run_market_sync():
             if markets_with_winning_tokens:
                 payout_logs = ResolutionService.resolve_market_winners(session, markets_with_winning_tokens)
                 session.commit()
-                logger.info(f"Payouts resolved: {payout_logs}", )
+                logger.debug(f"Payouts resolved: {payout_logs}", )
 
             # 2.1) Emit resolved markets to webhook
             emit_market_event(

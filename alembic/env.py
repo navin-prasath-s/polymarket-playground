@@ -28,6 +28,7 @@ load_dotenv()
 
 db_path_env = os.getenv("DB_PATH", "db/polymarket_playground.db")
 db_path = (BASE_DIR / db_path_env).resolve()
+db_path.parent.mkdir(parents=True, exist_ok=True)
 db_url = f"sqlite:///{str(db_path)}"
 
 # this is the Alembic Config object, which provides

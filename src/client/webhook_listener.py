@@ -24,7 +24,7 @@ class EventBus:
 
 
 class _Handler(BaseHTTPRequestHandler):
-    path_allowed = "/market-event"
+    path_allowed = "/market_event"
     bus: EventBus
 
     def do_POST(self):

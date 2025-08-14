@@ -8,10 +8,12 @@ from fastapi import FastAPI
 from src.api import user_route, order_route, position_route, admin_route
 from src.background_task import run_market_sync
 
-
-
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 scheduler = BackgroundScheduler()

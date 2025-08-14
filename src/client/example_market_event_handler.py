@@ -13,7 +13,7 @@ class PrintHandler(MarketEventHandler):
 
 
 handler = PrintHandler()
-wl = WebhookListener(port=8001, path="/market-event")
+wl = WebhookListener(port=8001, path="/market_event")
 wl.set_handler(handler)
 
 wl.start()
